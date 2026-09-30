@@ -16,17 +16,32 @@ def get_bq_client() -> bigquery.Client:
     return _client
 
 
+import datetime
+from decimal import Decimal
+
+def _normalize_value(val):
+    if isinstance(val, (datetime.date, datetime.datetime, datetime.time)):
+        return val.isoformat()
+    if isinstance(val, Decimal):
+        return float(val)
+    if isinstance(val, bytes):
+        return val.decode("utf-8", errors="replace")
+    return val
+
+def _normalize_row(row):
+    return {k: _normalize_value(v) for k, v in dict(row).items()}
+
 async def run_query(sql: str, max_rows: int = 1000) -> list[dict]:
     """
     Execute a SQL query against BigQuery and return rows as list of dicts.
-    Raises on query error — callers should handle.
+    All date and Decimal types are normalized to strings/floats for safe serialization.
     """
     client = get_bq_client()
     logger.info("Running BigQuery query", sql_preview=sql[:120])
     try:
         job = client.query(sql)
         rows = job.result(max_results=max_rows)
-        result = [dict(row) for row in rows]
+        result = [_normalize_row(row) for row in rows]
         logger.info("BigQuery query complete", row_count=len(result))
         return result
     except Exception as e:

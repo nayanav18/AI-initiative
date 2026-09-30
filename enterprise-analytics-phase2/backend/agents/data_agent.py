@@ -3,6 +3,7 @@ Data Agent — generates multiple SQL queries from auto-discovered schema
 and executes them against BigQuery.
 """
 import json
+import re
 import structlog
 import vertexai
 from vertexai.generative_models import GenerativeModel, GenerationConfig
@@ -80,8 +81,13 @@ class DataAgent(BaseAgent):
                 SQL_GEN_PROMPT.format(schema=schema_text, query=query),
                 generation_config=GenerationConfig(temperature=0.1, max_output_tokens=2048),
             )
-            raw = response.text.strip().replace("```json", "").replace("```", "").strip()
-            sql_queries = json.loads(raw)
+            raw = response.text.strip()
+            match = re.search(r"\{[\s\S]*\}", raw)
+            if match:
+                sql_queries = json.loads(match.group(0))
+            else:
+                raw_clean = raw.replace("```json", "").replace("```", "").strip()
+                sql_queries = json.loads(raw_clean)
             logger.info("SQL queries generated", keys=list(sql_queries.keys()))
         except Exception as e:
             logger.error("SQL generation failed", error=str(e))
@@ -101,18 +107,30 @@ class DataAgent(BaseAgent):
                 logger.error(f"BQ {key} failed", error=str(e), sql=sql[:200])
                 results[key] = {"rows": [], "sql": sql, "row_count": 0, "error": str(e)}
 
+        current_rows = results.get("current_period", {}).get("rows", [])
+        previous_rows = results.get("previous_period", {}).get("rows", [])
+        dimension_rows = results.get("by_dimensions", {}).get("rows", [])
+        trend_rows = results.get("trend", {}).get("rows", [])
+
+        # Crucial: Populate context keys expected by AnalyticsAgent
+        context["schema_text"]   = schema_text
+        context["current_data"]  = current_rows
+        context["previous_data"] = previous_rows
+        context["dimensions_data"] = dimension_rows
+        context["trend_data"]    = trend_rows
+
         context["data"] = {
             "source":      "bigquery",
             "results":     results,
             "sql_queries": sql_queries,
-            "rows":        results.get("current_period", {}).get("rows",      []),
+            "rows":        current_rows,
             "sql":         sql_queries.get("current_period", ""),
-            "row_count":   results.get("current_period", {}).get("row_count", 0),
+            "row_count":   len(current_rows),
         }
         logger.info(
             "Data agent complete",
-            current_rows=results.get("current_period", {}).get("row_count", 0),
-            dimension_rows=results.get("by_dimensions", {}).get("row_count", 0),
-            trend_rows=results.get("trend", {}).get("row_count", 0),
+            current_rows=len(current_rows),
+            dimension_rows=len(dimension_rows),
+            trend_rows=len(trend_rows),
         )
         return context

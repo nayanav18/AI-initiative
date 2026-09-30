@@ -108,8 +108,11 @@ if HAS_WIDGETS:
 
 @app.on_event("startup")
 async def startup():
-    init_vertex_ai()  # Add this line
     logger.info("Starting Vodafone Ireland Analytics v2.0")
+    try:
+        init_vertex_ai()
+    except Exception as e:
+        logger.warning("Vertex AI init on startup deferred", error=str(e))
     # Create BQ memory tables non-blocking
     try:
         from services.memory_service import ensure_tables_exist

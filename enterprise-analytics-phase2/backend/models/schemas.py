@@ -62,6 +62,17 @@ class RootCause(BaseModel):
         v = str(v).capitalize()
         return v if v in ("High", "Medium", "Low") else "Medium"
 
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def coerce_confidence(cls, v: Any) -> int:
+        if isinstance(v, (int, float)):
+            return int(v)
+        try:
+            cleaned = str(v).replace("%", "").replace("±", "").strip()
+            return int(float(cleaned))
+        except Exception:
+            return 70
+
 
 # ── Recommendation ────────────────────────────────────────────────────────
 
