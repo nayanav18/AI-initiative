@@ -74,7 +74,7 @@ export default function ChatView({ messages, loading, agentSteps, activeConv, se
                     onSuggestedQuery={(q) => {onSend(q);}}
                   />
                   ) : (
-                    <div style={{ background: "#0f172a", border: "1px solid #1e3a5f", borderRadius: 12, padding: "12px 16px", color: "#cbd5e1", fontSize: 13, lineHeight: 1.6 }}>
+                    <div style={{ background: "#0f172a", border: "1px solid #1e3a5f", borderRadius: 12, padding: "14px 18px", color: "#cbd5e1", fontSize: 13, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>
                       {typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content)}
                     </div>
                   )}

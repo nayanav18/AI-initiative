@@ -56,6 +56,7 @@ const tc = t => t === "Strategic" ? "blue" : t === "Tactical" ? "amber" : "red";
 
 export default function AnalyticsResponse({ data, onSaveInsight, onSuggestedQuery }) {
   const [showDetails, setShowDetails] = useState(false);
+  const [showChart, setShowChart] = useState(Boolean(data.wants_chart && data.chart));
 
   const bullets     = data.summary_bullets     || [];
   const actions     = data.recommendations     || [];
@@ -66,28 +67,86 @@ export default function AnalyticsResponse({ data, onSaveInsight, onSuggestedQuer
   const competitive = data.competitor_analysis || {};
   const competitors = competitive.competitors  || [];
 
-  // Limit chart to last 6 months
-  const chart6m = data.chart ? {
+  // Available chart data
+  const hasChartData = Boolean(data.chart && data.chart.data && data.chart.data.length > 0);
+  const chart6m = hasChartData ? {
     ...data.chart,
     data: (data.chart.data || []).slice(-6)
   } : null;
 
+  const isChartVisible = showChart && Boolean(chart6m);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-      {/* ── Row 1: KPIs + 6-month Chart ── */}
-      <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
+      {/* ── Row 1: KPIs + Optional Chart ── */}
+      <div style={{
+        display: "flex",
+        flexDirection: isChartVisible ? "row" : "column",
+        gap: 10,
+        alignItems: "stretch"
+      }}>
         {data.kpis?.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, width: 175 }}>
+          <div style={{
+            display: "flex",
+            flexDirection: isChartVisible ? "column" : "row",
+            flexWrap: "wrap",
+            gap: 8,
+            flexShrink: 0,
+            width: isChartVisible ? 180 : "100%",
+          }}>
             {data.kpis.map((k, i) => <KPICard key={i} kpi={k} />)}
           </div>
         )}
-        {chart6m && (
+
+        {isChartVisible && (
           <div style={{ flex: 1, background: "#0f172a", border: "1px solid #1e3a5f", borderRadius: 12, padding: "12px 16px", minWidth: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600 }}>CHART PREVIEW</span>
+              <button
+                onClick={() => setShowChart(false)}
+                style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", fontSize: 11 }}
+                title="Hide chart"
+              >
+                ✕ Hide
+              </button>
+            </div>
             <MiniChart chart={chart6m} />
           </div>
         )}
       </div>
+
+      {/* Optional button to reveal chart if user wants to see it on demand */}
+      {hasChartData && !isChartVisible && (
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button
+            onClick={() => setShowChart(true)}
+            style={{
+              padding: "5px 12px",
+              borderRadius: 6,
+              background: "rgba(59,130,246,0.08)",
+              border: "1px solid rgba(59,130,246,0.3)",
+              color: "#60a5fa",
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(59,130,246,0.18)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(59,130,246,0.08)"; }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="3" y="12" width="4" height="9" rx="1" opacity="0.4" />
+              <rect x="10" y="6" width="4" height="15" rx="1" opacity="0.6" />
+              <rect x="17" y="3" width="4" height="18" rx="1" opacity="0.8" />
+            </svg>
+            Show Chart
+          </button>
+        </div>
+      )}
 
       {/* ── Executive Summary ── */}
       <div style={{ background: "#0a1220", border: "1px solid #1e3a5f", borderRadius: 12, padding: "14px 18px" }}>

@@ -12,6 +12,7 @@ Key fixes:
 """
 import uuid
 import json
+import re
 from datetime import datetime
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -60,6 +61,37 @@ async def chat(request: ChatRequest):
 
     logger.info("Chat request", user_id=user_id,
                 persona_id=persona_id, query=query[:80])
+
+    # ── Conversational Check (greetings, hi, hello, who are you) ───────
+    q_clean = query.lower().strip()
+    is_greeting = bool(re.match(r"^(hi|hello|hey|hiya|howdy|yo|greetings|good\s+(morning|afternoon|evening))\b", q_clean))
+    is_casual = bool(re.match(r"^(how\s+are\s+you|who\s+are\s+you|what\s+are\s+you|what\s+can\s+you\s+do|help|help\s+me|what\s+is\s+this|what\s+do\s+you\s+do)\b", q_clean))
+    is_thanks = bool(re.match(r"^(thanks|thank\s+you|thx|cheers|bye|goodbye|cya|ok|okay|cool|awesome|great|nice|perfect)[.!]?$", q_clean))
+
+    if is_greeting or is_casual or is_thanks:
+        if is_greeting:
+            reply = (
+                "Hello! How can I help you today? I'm your Vodafone Ireland Analytics Assistant.\n\n"
+                "You can ask me questions about subscriber numbers, revenue trends, churn drivers, channel performance, "
+                "or ask me to generate a chart. What would you like to explore?"
+            )
+        elif is_casual:
+            reply = (
+                "I am your Enterprise Analytics Assistant for Vodafone Ireland. "
+                "I can analyze subscriber movements, diagnose revenue and churn drivers, compare market shares vs Eir and Three, "
+                "and generate on-demand visualizations. What would you like to explore?"
+            )
+        else:
+            reply = "You're welcome! Let me know if you have any questions about your data."
+
+        return JSONResponse(content={
+            "is_conversational": True,
+            "reply": reply,
+            "query": query,
+            "user_id": user_id,
+            "persona_id": persona_id,
+            "conversation_id": conv_id or str(uuid.uuid4()),
+        })
 
     # ── 1. Register user in BQ (non-blocking) ─────────────────────────
     if MEMORY_ENABLED:
@@ -174,6 +206,12 @@ async def chat(request: ChatRequest):
             logger.warning("Message save failed", error=str(e)[:60])
 
     # ── 8. Add Phase 2 fields and return ──────────────────────────────
+    # Only include chart if user explicitly requested one in the query
+    wants_chart = bool(re.search(r"\b(chart|charts|graph|graphs|plot|plots|visualiz|diagram|waterfall|funnel|donut|pie|histogram)\b", query, re.IGNORECASE))
+    if not wants_chart and "chart" in result_dict:
+        result_dict["chart"] = None
+    result_dict["wants_chart"] = wants_chart
+
     result_dict["user_id"]         = user_id
     result_dict["persona_id"]      = persona_id
     result_dict["conversation_id"] = conv_id

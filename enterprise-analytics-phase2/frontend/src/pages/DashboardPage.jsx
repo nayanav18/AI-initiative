@@ -147,7 +147,6 @@ setLastRefresh(new Date());
               padding: "10px 16px",
               fontSize: 11, fontWeight: 600,
               color: activeLayer === i ? accentColor : "#64748b",
-              borderBottom: `2px solid ${activeLayer === i ? accentColor : "transparent"}`,
               background: "transparent",
               border: "none",
               borderBottom: `2px solid ${activeLayer === i ? accentColor : "transparent"}`,
