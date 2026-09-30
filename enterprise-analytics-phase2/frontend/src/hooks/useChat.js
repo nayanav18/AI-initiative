@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { api } from "../utils/api";
 import { uid, AGENT_PIPELINE } from "../utils/helpers";
 import {
@@ -8,15 +8,55 @@ import {
   generateLocalAnalytics,
 } from "../utils/conversationEngine";
 
+const CONVERSATIONS_STORAGE_KEY = "enterprise_chat_conversations";
+
+function loadSavedConversations() {
+  try {
+    const raw = localStorage.getItem(CONVERSATIONS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
 /**
- * useChat — manages conversation state, conversational intent gating,
+ * useChat — manages conversation state with localStorage persistence,
+ * chronological grouping support, deletion, conversational gating,
  * on-demand chart rendering, and offline local fallback.
  */
 export function useChat({ selectedDataset }) {
-  const [conversations, setConversations] = useState([]);
-  const [activeConvId, setActiveConvId] = useState(null);
+  const [conversations, setConversations] = useState(loadSavedConversations);
+  const [activeConvId, setActiveConvId] = useState(() => {
+    const saved = loadSavedConversations();
+    return saved.length > 0 ? saved[0].id : null;
+  });
   const [loading, setLoading] = useState(false);
   const [agentSteps, setAgentSteps] = useState({});
+
+  // Sync conversations to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(CONVERSATIONS_STORAGE_KEY, JSON.stringify(conversations));
+    } catch (e) {
+      console.warn("Failed to persist conversations:", e);
+    }
+  }, [conversations]);
+
+  const deleteConv = useCallback((id) => {
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    setActiveConvId((curr) => {
+      if (curr === id) {
+        const remaining = conversations.filter((c) => c.id !== id);
+        return remaining.length > 0 ? remaining[0].id : null;
+      }
+      return curr;
+    });
+  }, [conversations]);
+
+  const clearAllConvs = useCallback(() => {
+    setConversations([]);
+    setActiveConvId(null);
+  }, []);
 
   const activeConv = conversations.find((c) => c.id === activeConvId) || null;
   const messages = activeConv?.messages || [];
@@ -212,5 +252,7 @@ export function useChat({ selectedDataset }) {
     newChat,
     openConv,
     sendMessage,
+    deleteConv,
+    clearAllConvs,
   };
 }

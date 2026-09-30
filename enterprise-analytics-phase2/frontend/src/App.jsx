@@ -10,6 +10,7 @@ import { api } from "./utils/api";
 export default function App() {
  const [activeNav, setActiveNav]           = useState("chat");
  const [selectedDataset, setSelectedDataset] = useState(DATASETS[0]);
+ const [sidebarOpen, setSidebarOpen]       = useState(true);
 
  // Load saved insights from LocalStorage on mount
  const [savedInsights, setSavedInsights]   = useState(() => {
@@ -38,7 +39,7 @@ export default function App() {
  const {
    conversations, activeConv, activeConvId,
    messages, loading, agentSteps,
-   newChat, openConv, sendMessage,
+   newChat, openConv, sendMessage, deleteConv,
  } = useChat({ selectedDataset });
  const handleSaveInsight = (msg) => {
    // Capture the structured analytics data (chart JSON) if it exists, 
@@ -113,7 +114,9 @@ export default function App() {
        button { transition: all 0.15s; }
      `}</style>
      {/* ── Sidebar ── */}
-<Sidebar
+     <Sidebar
+       isOpen={sidebarOpen}
+       onToggle={() => setSidebarOpen((prev) => !prev)}
        activeNav={activeNav}
        setActiveNav={(nav) => {
          setActiveNav(nav);
@@ -127,16 +130,58 @@ export default function App() {
        activeConvId={activeConvId}
        openConv={openConv}
        newChat={newChat}
+       deleteConv={deleteConv}
        savedInsightsCount={savedInsights.length}
      />
+     {/* ── Floating button to open sidebar when closed on other tabs ── */}
+     {!sidebarOpen && activeNav !== "chat" && (
+       <button
+         onClick={() => setSidebarOpen(true)}
+         title="Open sidebar"
+         style={{
+           position: "fixed",
+           top: 10,
+           left: 10,
+           zIndex: 100,
+           background: "#0f172a",
+           border: "1px solid #1e3a5f",
+           borderRadius: 8,
+           padding: "6px 10px",
+           color: "#94a3b8",
+           cursor: "pointer",
+           display: "flex",
+           alignItems: "center",
+           gap: 6,
+           fontSize: 12,
+           fontWeight: 500,
+           boxShadow: "0 4px 14px rgba(0,0,0,0.5)",
+           transition: "all 0.15s",
+         }}
+         onMouseEnter={(e) => {
+           e.currentTarget.style.color = "#f1f5f9";
+           e.currentTarget.style.borderColor = "#3b82f6";
+         }}
+         onMouseLeave={(e) => {
+           e.currentTarget.style.color = "#94a3b8";
+           e.currentTarget.style.borderColor = "#1e3a5f";
+         }}
+       >
+         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+           <rect x="3" y="3" width="18" height="18" rx="2" />
+           <path d="M9 3v18" />
+           <path d="M14 9l3 3-3 3" />
+         </svg>
+         <span>Sidebar</span>
+       </button>
+     )}
      {/* ── Main content ── */}
-<main style={{
+     <main style={{
        flex: 1, overflow: "hidden",
        display: "flex", flexDirection: "column",
      }}>
        {/* Chat / History */}
        {(activeNav === "chat" || activeNav === "history") && (
-<ChatView
+         <ChatView
            messages={messages}
            loading={loading}
            agentSteps={agentSteps}
@@ -145,6 +190,8 @@ export default function App() {
            onSend={handleSend}
            onNewChat={newChat}
            onSaveInsight={handleSaveInsight}
+           sidebarOpen={sidebarOpen}
+           onToggleSidebar={() => setSidebarOpen(true)}
          />
        )}
        {/* Insights */}

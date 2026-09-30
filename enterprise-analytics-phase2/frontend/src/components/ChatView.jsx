@@ -3,7 +3,18 @@ import AgentStatusPill from "./AgentStatusPill";
 import AnalyticsResponse from "./AnalyticsResponse";
 import { SUGGESTED_QUERIES } from "../utils/helpers";
 
-export default function ChatView({ messages, loading, agentSteps, activeConv, selectedDataset, onSend, onNewChat, onSaveInsight }) {
+export default function ChatView({
+  messages,
+  loading,
+  agentSteps,
+  activeConv,
+  selectedDataset,
+  onSend,
+  onNewChat,
+  onSaveInsight,
+  sidebarOpen,
+  onToggleSidebar,
+}) {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -19,9 +30,46 @@ export default function ChatView({ messages, loading, agentSteps, activeConv, se
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       {/* Top bar */}
-      <div style={{ padding: "11px 24px", borderBottom: "1px solid #0d1f35", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(6,13,26,0.95)", backdropFilter: "blur(8px)" }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>
-          {activeConv ? activeConv.title : "Enterprise Command Center"}
+      <div style={{ padding: "10px 20px", borderBottom: "1px solid #0d1f35", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(6,13,26,0.95)", backdropFilter: "blur(8px)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          {!sidebarOpen && onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              title="Open sidebar"
+              style={{
+                background: "rgba(15,23,42,0.8)",
+                border: "1px solid #1e3a5f",
+                borderRadius: 6,
+                color: "#94a3b8",
+                cursor: "pointer",
+                padding: "5px 8px",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 11,
+                fontWeight: 500,
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#f1f5f9";
+                e.currentTarget.style.borderColor = "#3b82f6";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#94a3b8";
+                e.currentTarget.style.borderColor = "#1e3a5f";
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M9 3v18" />
+                <path d="M14 9l3 3-3 3" />
+              </svg>
+              <span>Sidebar</span>
+            </button>
+          )}
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {activeConv ? activeConv.title : "Enterprise Command Center"}
+          </div>
         </div>
         {loading && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#60a5fa" }}>

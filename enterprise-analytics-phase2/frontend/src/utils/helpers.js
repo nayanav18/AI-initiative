@@ -10,6 +10,46 @@ export function timeAgo(ts) {
   return `${Math.floor(diff / 86400000)}d ago`;
 }
 
+export function groupConversationsByDate(conversations) {
+  if (!conversations || conversations.length === 0) return [];
+  const groups = {
+    today: [],
+    yesterday: [],
+    previous7Days: [],
+    previous30Days: [],
+    older: [],
+  };
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfYesterday = startOfToday - 86400000;
+  const startOf7Days = startOfToday - 7 * 86400000;
+  const startOf30Days = startOfToday - 30 * 86400000;
+
+  conversations.forEach((conv) => {
+    const ts = typeof conv.ts === "number" ? conv.ts : new Date(conv.ts || Date.now()).getTime();
+    if (ts >= startOfToday) {
+      groups.today.push(conv);
+    } else if (ts >= startOfYesterday) {
+      groups.yesterday.push(conv);
+    } else if (ts >= startOf7Days) {
+      groups.previous7Days.push(conv);
+    } else if (ts >= startOf30Days) {
+      groups.previous30Days.push(conv);
+    } else {
+      groups.older.push(conv);
+    }
+  });
+
+  return [
+    { label: "Today", items: groups.today },
+    { label: "Yesterday", items: groups.yesterday },
+    { label: "Previous 7 Days", items: groups.previous7Days },
+    { label: "Previous 30 Days", items: groups.previous30Days },
+    { label: "Older", items: groups.older },
+  ].filter((g) => g.items.length > 0);
+}
+
 export const DATASETS = [
   { id: "ireland",  label: "Ireland Constellation", flag: "🇮🇪" },
   { id: "mi",       label: "MI Constellation",       flag: "🇺🇸" },
