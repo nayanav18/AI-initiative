@@ -1,0 +1,58 @@
+# ============================================================
+# Enterprise Analytics AI — Git Ignore
+# ============================================================
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# Environment files (keep .env.example only)
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# Database files (may contain confidential data)
+*.db
+*.sqlite
+*.sqlite3
+backend/data/*.db
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Credentials — NEVER commit
+service-account*.json
+*-credentials.json
+*-key.json
+*.pem
+*.key
+
+# Coverage
+htmlcov/
+.coverage
+coverage.xml
